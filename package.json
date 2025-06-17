@@ -1,0 +1,37 @@
+{
+    "name": "echart-server",
+    "version": "2.0.0",
+    "description": "High-performance HTTP server with ECharts visualization endpoints - TypeScript Edition",
+    "main": "src/server.ts",
+    "scripts": {
+        "build": "tsc",
+        "start": "bun run src/server.ts",
+        "dev": "bun --watch src/server.ts",
+        "start-check": "bun run src/server.ts",
+        "test": "bun run tests/examples.js",
+        "test-fixes": "bun run tests/test-fixes.js",
+        "test-png": "bun run tests/test-png.js",
+        "test-performance": "bun run tests/performance-test.ts",
+        "type-check": "tsc --noEmit",
+        "lint": "tsc --noEmit && echo 'Type check passed'",
+        "examples": "echo '# PNG生成示例\n\n# 1. 折线图\ncurl -X POST http://localhost:3000/png -H \"Content-Type: application/json\" -d \"{\\\"chartType\\\":\\\"line\\\",\\\"chartData\\\":{\\\"title\\\":\\\"销售趋势\\\",\\\"categories\\\":[\\\"Q1\\\",\\\"Q2\\\",\\\"Q3\\\",\\\"Q4\\\"],\\\"series\\\":[{\\\"name\\\":\\\"2024\\\",\\\"data\\\":[100,120,140,160]}]},\\\"imageOptions\\\":{\\\"width\\\":800,\\\"height\\\":600}}\" --output line-chart.png\n\n# 2. 直方图\ncurl -X POST http://localhost:3000/png -H \"Content-Type: application/json\" -d \"{\\\"chartType\\\":\\\"histogram\\\",\\\"chartData\\\":{\\\"title\\\":\\\"年龄分布\\\",\\\"categories\\\":[\\\"18-25\\\",\\\"26-30\\\",\\\"31-35\\\",\\\"36-40\\\"],\\\"data\\\":[320,480,650,420]},\\\"imageOptions\\\":{\\\"width\\\":800,\\\"height\\\":600}}\" --output histogram-chart.png\n\n# 3. 饼图\ncurl -X POST http://localhost:3000/png -H \"Content-Type: application/json\" -d \"{\\\"chartType\\\":\\\"pie\\\",\\\"chartData\\\":{\\\"title\\\":\\\"市场份额\\\",\\\"data\\\":[{\\\"name\\\":\\\"苹果\\\",\\\"value\\\":335},{\\\"name\\\":\\\"三星\\\",\\\"value\\\":310},{\\\"name\\\":\\\"华为\\\",\\\"value\\\":234}]},\\\"imageOptions\\\":{\\\"width\\\":800,\\\"height\\\":600}}\" --output pie-chart.png\n\n# 4. 地图\ncurl -X POST http://localhost:3000/png -H \"Content-Type: application/json\" -d \"{\\\"chartType\\\":\\\"map\\\",\\\"chartData\\\":{\\\"title\\\":\\\"用户分布\\\",\\\"data\\\":[{\\\"name\\\":\\\"北京\\\",\\\"value\\\":890},{\\\"name\\\":\\\"上海\\\",\\\"value\\\":823},{\\\"name\\\":\\\"广东\\\",\\\"value\\\":892}]},\\\"imageOptions\\\":{\\\"width\\\":800,\\\"height\\\":600}}\" --output map-chart.png'"
+    },
+    "dependencies": {
+        "canvas": "^3.1.0",
+        "echarts": "^5.4.3",
+        "jsdom": "^22.1.0",
+        "sharp": "^0.32.6"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/jsdom": "^22.1.0",
+        "bun-types": "latest",
+        "typescript": "^5.3.0"
+    },
+    "module": "index.ts",
+    "type": "module",
+    "engines": {
+        "node": ">=18.0.0",
+        "bun": ">=1.0.0"
+    }
+}
