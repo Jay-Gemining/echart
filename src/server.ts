@@ -648,7 +648,7 @@ class OptimizedEChartsServer {
       },
       yAxis: {
         type: "value",
-        name: "频次",
+        name: "",
       },
       series: [
         {
@@ -819,10 +819,18 @@ class OptimizedEChartsServer {
     const defaultData = this.config.defaultData.scatter;
     const chartConfig = this.config.charts.scatter;
 
-    const title = data?.title || chartConfig.defaultTitle;
-    const xAxisName = data?.xAxisName || defaultData.xAxisName;
-    const yAxisName = data?.yAxisName || defaultData.yAxisName;
-    const seriesData = data?.series || defaultData.series;
+    // 从传入数据或默认数据中获取配置
+    const {
+      title = chartConfig.defaultTitle,
+      xCategories = defaultData.xCategories,
+      yCategories = defaultData.yCategories,
+      series: seriesData = defaultData.series,
+    } = data || {};
+
+    // 计算所有数据点中 size 的最大值和最小值，用于 visualMap
+    const allSizes = seriesData.flatMap((s) => s.data.map((p) => p.size));
+    const minSize = allSizes.length > 0 ? Math.min(...allSizes) : 0;
+    const maxSize = allSizes.length > 0 ? Math.max(...allSizes) : 100;
 
     return {
       title: {
@@ -833,61 +841,67 @@ class OptimizedEChartsServer {
           fontWeight: "bold",
         },
       },
-      tooltip: {
-        trigger: "item",
-        formatter: function (params: any) {
-          const value = params.value;
-          const [x, y, size] = Array.isArray(value)
-            ? value
-            : [value[0], value[1], undefined];
-          let tooltip = `${params.seriesName}<br/>${xAxisName}: ${x}<br/>${yAxisName}: ${y}`;
-          if (size !== undefined) {
-            tooltip += `<br/>大小: ${size}`;
-          }
-          return tooltip;
-        },
-      },
       legend: {
         data: seriesData.map((s) => s.name),
         top: chartConfig.legend.defaultTop,
       },
       grid: chartConfig.grid,
-      xAxis: {
-        type: "value",
-        name: xAxisName,
-        nameLocation: "middle",
-        nameGap: 30,
-        splitLine: {
-          show: true,
-          lineStyle: {
-            type: "dashed",
-          },
+      tooltip: {
+        trigger: "item",
+        formatter: (params: any) => {
+          // params.value 是 [x_index, y_index, size]
+          const xIndex = params.value[0];
+          const yIndex = params.value[1];
+          const size = params.value[2];
+          const xLabel = xCategories[xIndex] || "未知X";
+          const yLabel = yCategories[yIndex] || "未知Y";
+          return `${params.seriesName}<br/>
+                     ${xLabel} / ${yLabel}<br/>
+                     大小: ${size.toFixed(2)}`;
         },
       },
+      // X轴配置为分类轴
+      xAxis: {
+        type: "category",
+        data: xCategories,
+        boundaryGap: true,
+        splitLine: { show: true },
+        axisLine: { show: false },
+      },
+      // Y轴配置为分类轴
       yAxis: {
-        type: "value",
-        name: yAxisName,
-        nameLocation: "middle",
-        nameGap: 30,
-        splitLine: {
-          show: true,
-          lineStyle: {
-            type: "dashed",
-          },
+        type: "category",
+        data: yCategories,
+        boundaryGap: true,
+        splitLine: { show: true },
+        axisLine: { show: false },
+      },
+      // 使用 visualMap 控制散点大小
+      visualMap: {
+        show: false, // 不显示 visualMap 组件，但其功能仍然生效
+        min: minSize,
+        max: maxSize,
+        dimension: 2, // 指定 `size` 是数据项的第三个维度 ([x_idx, y_idx, size])
+        inRange: {
+          // 将 size 值映射到视觉上的符号大小
+          symbolSize: [chartConfig.sizeRange.min, chartConfig.sizeRange.max],
         },
       },
       series: seriesData.map((series, index) => {
-        const symbolSize = series.symbolSize || chartConfig.symbolSize;
         return {
           name: series.name,
           type: "scatter",
-          data: series.data,
-          symbolSize: symbolSize,
+          // 转换数据格式为 ECharts 需要的 [x_index, y_index, size]
+          data: series.data.map((point) => [
+            point.position[0],
+            point.position[1],
+            point.size,
+          ]),
           itemStyle: {
             color: chartConfig.colors[index % chartConfig.colors.length],
           },
           emphasis: {
-            scale: chartConfig.emphasis.scale,
+            focus: "series",
             itemStyle: {
               borderColor: "#333",
               borderWidth: 2,

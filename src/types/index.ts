@@ -101,12 +101,29 @@ export interface MapChartData {
 }
 
 /**
+ * 散点图数据点
+ */
+export interface ScatterPoint {
+  position: [number, number]; // [x_index, y_index]
+  size: number;
+}
+
+/**
+ * 散点图的系列数据项
+ */
+export interface ScatterSeriesItem {
+  name: string;
+  data: ScatterPoint[];
+}
+
+/**
  * 散点图数据项
  */
 export interface ScatterDataItem {
-  name: string;
-  data: [number, number][];
-  symbolSize: number;
+  title?: string;
+  xCategories: string[];
+  yCategories: string[];
+  series: ScatterSeriesItem[];
 }
 
 /**
