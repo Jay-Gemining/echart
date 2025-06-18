@@ -117,23 +117,13 @@ export interface ScatterSeriesItem {
 }
 
 /**
- * 散点图数据项
- */
-export interface ScatterDataItem {
-  title?: string;
-  xCategories: string[];
-  yCategories: string[];
-  series: ScatterSeriesItem[];
-}
-
-/**
  * 散点图数据接口
  */
 export interface ScatterChartData {
   title?: string;
-  xAxisName?: string;
-  yAxisName?: string;
-  series: ScatterDataItem[];
+  xCategories: string[];
+  yCategories: string[];
+  series: ScatterSeriesItem[];
 }
 
 /**
