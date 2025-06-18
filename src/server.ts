@@ -11,6 +11,7 @@ import type {
   HistogramData,
   PieChartData,
   MapChartData,
+  ScatterChartData,
   PNGGenerationRequest,
   ImageOptions,
   HealthCheckResponse,
@@ -153,6 +154,7 @@ class OptimizedEChartsServer {
       "/histogram": this.handleHistogramChart.bind(this),
       "/pie": this.handlePieChart.bind(this),
       "/map": this.handleMapChart.bind(this),
+      "/scatter": this.handleScatterChart.bind(this),
       "/png": this.handlePNGGeneration.bind(this),
     };
 
@@ -386,6 +388,27 @@ class OptimizedEChartsServer {
   }
 
   /**
+   * 处理散点图请求
+   */
+  private async handleScatterChart(
+    req: HTTPRequest,
+    corsHeaders: Record<string, string>,
+  ): Promise<Response> {
+    if (req.method === "GET") {
+      const chartConfig = this.getScatterChartConfig();
+      return this.createJSONResponse(chartConfig, corsHeaders);
+    }
+
+    if (req.method === "POST") {
+      const data = (await req.json()) as Partial<ScatterChartData>;
+      const chartConfig = this.getScatterChartConfig(data);
+      return this.createJSONResponse(chartConfig, corsHeaders);
+    }
+
+    return this.createMethodNotAllowedResponse(corsHeaders);
+  }
+
+  /**
    * 处理PNG生成请求
    */
   private async handlePNGGeneration(
@@ -473,6 +496,8 @@ class OptimizedEChartsServer {
         return this.getPieChartConfig(chartData as PieChartData);
       case "map":
         return this.getMapChartConfig(chartData as MapChartData);
+      case "scatter":
+        return this.getScatterChartConfig(chartData as ScatterChartData);
       default:
         throw new Error(`不支持的图表类型: ${chartType}`);
     }
@@ -747,6 +772,136 @@ class OptimizedEChartsServer {
   }
 
   /**
+   * 生成散点图配置
+   */
+  private getScatterChartConfig(
+    data?: Partial<ScatterChartData>,
+  ): EChartsOption {
+    const defaultData = this.config.defaultData.scatter;
+    const chartConfig = this.config.charts.scatter;
+
+    const title = data?.title || chartConfig.defaultTitle;
+    const xAxisName = data?.xAxisName || defaultData.xAxisName;
+    const yAxisName = data?.yAxisName || defaultData.yAxisName;
+    const seriesData = data?.series || defaultData.series;
+
+    return {
+      title: {
+        text: title,
+        left: "center",
+        textStyle: {
+          fontSize: 18,
+          fontWeight: "bold",
+        },
+      },
+      tooltip: {
+        trigger: "item",
+        formatter: function (params: any) {
+          const value = params.value;
+          const [x, y, size] = Array.isArray(value)
+            ? value
+            : [value[0], value[1], undefined];
+          let tooltip = `${params.seriesName}<br/>${xAxisName}: ${x}<br/>${yAxisName}: ${y}`;
+          if (size !== undefined) {
+            tooltip += `<br/>大小: ${size}`;
+          }
+          return tooltip;
+        },
+      },
+      legend: {
+        data: seriesData.map((s) => s.name),
+        top: chartConfig.legend.defaultTop,
+      },
+      grid: chartConfig.grid,
+      xAxis: {
+        type: "value",
+        name: xAxisName,
+        nameLocation: "middle",
+        nameGap: 30,
+        splitLine: {
+          show: true,
+          lineStyle: {
+            type: "dashed",
+          },
+        },
+      },
+      yAxis: {
+        type: "value",
+        name: yAxisName,
+        nameLocation: "middle",
+        nameGap: 30,
+        splitLine: {
+          show: true,
+          lineStyle: {
+            type: "dashed",
+          },
+        },
+      },
+      series: seriesData.map((series, index) => {
+        // 检查是否有三维数据（包含大小信息）
+        const hasThreeDimensionalData = series.data.some(
+          (item) => Array.isArray(item.value) && item.value.length === 3,
+        );
+
+        // 如果有三维数据，使用函数来动态计算大小
+        let symbolSize: number | ((value: any) => number);
+
+        if (hasThreeDimensionalData) {
+          // 计算大小范围用于缩放
+          const sizes = series.data
+            .filter(
+              (item) => Array.isArray(item.value) && item.value.length === 3,
+            )
+            .map((item) => item.value[2])
+            .filter((size): size is number => typeof size === "number");
+
+          const minSize = Math.min(...sizes);
+          const maxSize = Math.max(...sizes);
+          const sizeRange = maxSize - minSize;
+
+          // 使用配置中定义的大小范围
+          const minDisplaySize = chartConfig.sizeRange.min;
+          const maxDisplaySize = chartConfig.sizeRange.max;
+
+          symbolSize = (value: any) => {
+            if (Array.isArray(value) && value.length === 3) {
+              const size = value[2];
+              if (sizeRange === 0) return chartConfig.symbolSize;
+              // 线性缩放到显示范围
+              const normalizedSize = (size - minSize) / sizeRange;
+              return (
+                minDisplaySize +
+                normalizedSize * (maxDisplaySize - minDisplaySize)
+              );
+            }
+            return chartConfig.symbolSize;
+          };
+        } else {
+          // 使用系列级别的大小或默认大小
+          symbolSize = series.symbolSize || chartConfig.symbolSize;
+        }
+
+        return {
+          name: series.name,
+          type: "scatter",
+          data: series.data.map((item) => item.value),
+          symbolSize: symbolSize,
+          itemStyle: {
+            color: chartConfig.colors[index % chartConfig.colors.length],
+          },
+          emphasis: {
+            scale: chartConfig.emphasis.scale,
+            itemStyle: {
+              borderColor: "#333",
+              borderWidth: 2,
+            },
+          },
+        };
+      }),
+    };
+  }
+
+  /**
    * 省份名称标准化
    */
   private normalizeProvinceName(name: string): string {
@@ -989,12 +1144,18 @@ class OptimizedEChartsServer {
                 <h3 class="chart-title">🗺️ 地图</h3>
                 <div id="mapChart" class="chart-container"></div>
             </div>
+            <div class="chart-card">
+                <h3 class="chart-title">🔹 散点图</h3>
+                <div id="scatterChart" class="chart-container"></div>
+            </div>
         </div>
 
         <div class="api-section">
             <h2 class="api-title">📡 API端点</h2>
             <div class="api-endpoint">GET  /health - 健康检查和性能状态</div>
             <div class="api-endpoint">GET  /line - 获取折线图配置</div>
+            <div class="api-endpoint">GET  /scatter - 获取散点图配置</div>
+            <div class="api-endpoint">POST /scatter - 自定义散点图数据</div>
             <div class="api-endpoint">POST /line - 自定义折线图数据</div>
             <div class="api-endpoint">GET  /histogram - 获取直方图配置</div>
             <div class="api-endpoint">POST /histogram - 自定义直方图数据</div>
@@ -1044,12 +1205,19 @@ class OptimizedEChartsServer {
                 const mapChart = echarts.init(document.getElementById('mapChart'));
                 mapChart.setOption(mapData);
 
+                // 散点图
+                const scatterResponse = await fetch('/scatter');
+                const scatterData = await scatterResponse.json();
+                const scatterChart = echarts.init(document.getElementById('scatterChart'));
+                scatterChart.setOption(scatterData);
+
                 // 响应式处理
                 window.addEventListener('resize', () => {
                     lineChart.resize();
                     histogramChart.resize();
                     pieChart.resize();
                     mapChart.resize();
+                    scatterChart.resize();
                 });
 
             } catch (error) {

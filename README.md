@@ -5,7 +5,7 @@
 ## ✨ 功能特性
 
 - 🚀 **高性能**: 使用 Bun 运行时，启动速度快
-- 📊 **多图表类型**: 支持折线图、直方图、饼图、地图四种图表
+- 📊 **多图表类型**: 支持折线图、直方图、饼图、地图、散点图五种图表
 - 🎨 **美观界面**: 提供响应式 Web 界面展示所有图表
 - 🔧 **RESTful API**: 完整的 GET/POST API 支持
 - 📱 **响应式设计**: 支持移动端访问
@@ -79,7 +79,14 @@ echart/
 - 展示中国各省份地理数据分布
 - 智能地名映射，支持简称输入
 
-### 5. 🖼️ PNG图像生成
+### 5. 🔹 散点图 (Scatter Chart)
+- 展示两个变量之间的关系
+- 支持多系列数据和自定义点大小
+- **每个点可设置不同大小**：支持三维数据 `[x, y, size]`
+- **气泡图效果**：第三维度表示数据的重要性或影响力
+- 适用于相关性分析和数据分布展示
+
+### 6. 🖼️ PNG图像生成
 - 将任意图表数据转换为PNG图像
 - 支持自定义图像尺寸和背景色
 - 提供Web界面和API两种方式
@@ -94,10 +101,12 @@ echart/
 - **GET /histogram** - 获取默认直方图配置
 - **GET /pie** - 获取默认饼图配置
 - **GET /map** - 获取默认地图配置
+- **GET /scatter** - 获取默认散点图配置
 - **GET /china.json** - 获取中国地图GeoJSON数据
 
 ### POST 端点（自定义数据）
 - **POST /line** - 使用自定义数据创建折线图
+- **POST /scatter** - 使用自定义数据创建散点图
 - **POST /histogram** - 使用自定义数据创建直方图
 - **POST /pie** - 使用自定义数据创建饼图
 - **POST /map** - 使用自定义数据创建地图
@@ -121,18 +130,53 @@ bun run test
 
 # PNG功能测试
 bun run test-png
+
+# 散点图功能测试
+bun run test-scatter
+
+# 散点图点大小功能专项测试
+bun run test-scatter-size
+
+# 散点图示例演示
+bun run example-scatter
+
+# 气泡图效果示例
+bun run example-bubble
 ```
 
 ### 可视化测试
 - 访问 `public/map-test.html` 进行地图功能测试
 - 访问 `public/png-demo.html` 进行PNG功能演示
 - 在线验证地名映射和数据匹配
+- 主页面 `http://localhost:3000` 可查看所有图表类型，包括散点图
+- 散点图支持每个点设置不同大小，实现气泡图效果
 
 ## 🔧 使用示例
 
 ### 获取默认图表
 ```bash
 curl http://localhost:3000/line
+```
+
+### 创建自定义散点图（气泡图效果）
+```bash
+curl -X POST http://localhost:3000/scatter \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "用户分析气泡图",
+    "xAxisName": "活跃度",
+    "yAxisName": "消费金额",
+    "series": [
+      {
+        "name": "VIP用户",
+        "data": [
+          {"value": [80, 5000, 45]},
+          {"value": [90, 8000, 60]},
+          {"value": [95, 12000, 80]}
+        ]
+      }
+    ]
+  }'
 ```
 
 ### 创建自定义折线图

@@ -14,6 +14,7 @@ import type {
   HistogramData,
   PieDataItem,
   MapDataItem,
+  ScatterChartData,
 } from "./types/index.ts";
 
 /**
@@ -108,6 +109,41 @@ export const config: Config = {
         calculable: true,
         colors: ["#e0ffff", "#006edd"],
       },
+    },
+
+    // 散点图配置
+    scatter: {
+      defaultTitle: "数据分布散点图",
+      grid: {
+        left: "3%",
+        right: "4%",
+        bottom: "3%",
+        containLabel: true,
+      },
+      legend: {
+        defaultTop: "10%",
+      },
+      colors: [
+        "#5470c6",
+        "#91cc75",
+        "#fac858",
+        "#ee6666",
+        "#73c0de",
+        "#3ba272",
+        "#fc8452",
+        "#9a60b4",
+        "#ea7ccc",
+      ],
+      symbolSize: 20,
+      emphasis: {
+        scale: true,
+        scaleSize: 30,
+      },
+      sizeRange: {
+        min: 5,
+        max: 50,
+      },
+      enableDynamicSize: true,
     },
   },
 
@@ -253,6 +289,50 @@ export const config: Config = {
       { name: "香港特别行政区", value: 345 },
       { name: "澳门特别行政区", value: 67 },
     ],
+
+    // 散点图默认数据
+    scatter: {
+      xAxisName: "X轴",
+      yAxisName: "Y轴",
+      series: [
+        {
+          name: "系列1",
+          data: [
+            { value: [28.8, 39.3, 15] },
+            { value: [36.5, 27.7, 25] },
+            { value: [81.8, 51.7, 35] },
+            { value: [31.6, 24.6, 20] },
+            { value: [77.0, 52.4, 30] },
+            { value: [91.4, 29.7, 40] },
+            { value: [60.4, 32.1, 22] },
+            { value: [20.4, 50.6, 18] },
+            { value: [91.4, 29.7, 28] },
+            { value: [44.0, 76.8, 32] },
+            { value: [83.6, 92.5, 45] },
+            { value: [32.4, 58.8, 26] },
+          ],
+          symbolSize: 20,
+        },
+        {
+          name: "系列2",
+          data: [
+            { value: [41.5, 66.2, 12] },
+            { value: [82.1, 78.2, 38] },
+            { value: [50.1, 36.4, 24] },
+            { value: [58.4, 24.5, 16] },
+            { value: [77.0, 52.4, 33] },
+            { value: [35.3, 85.4, 42] },
+            { value: [13.1, 49.1, 19] },
+            { value: [89.4, 17.6, 29] },
+            { value: [10.1, 22.4, 14] },
+            { value: [24.1, 36.5, 21] },
+            { value: [86.5, 68.3, 36] },
+            { value: [16.4, 55.9, 27] },
+          ],
+          symbolSize: 20,
+        },
+      ],
+    },
   },
 
   // 环境配置

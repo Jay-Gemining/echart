@@ -95,13 +95,41 @@ export interface MapChartData {
 }
 
 /**
+ * 散点图数据项
+ */
+export interface ScatterDataItem {
+  name?: string;
+  value: [number, number] | [number, number, number];
+}
+
+/**
+ * 散点图系列数据
+ */
+export interface ScatterSeriesData {
+  name: string;
+  data: ScatterDataItem[];
+  symbolSize?: number | ((value: any) => number);
+}
+
+/**
+ * 散点图数据接口
+ */
+export interface ScatterChartData {
+  title?: string;
+  xAxisName?: string;
+  yAxisName?: string;
+  series: ScatterSeriesData[];
+}
+
+/**
  * 通用图表数据类型
  */
 export type ChartData =
   | LineChartData
   | HistogramData
   | PieChartData
-  | MapChartData;
+  | MapChartData
+  | ScatterChartData;
 
 // ===== 图像渲染类型 =====
 
@@ -204,6 +232,24 @@ export interface ChartConfig {
       colors: [string, string];
     };
   };
+  scatter: {
+    defaultTitle: string;
+    grid: Record<string, any>;
+    legend: {
+      defaultTop: string;
+    };
+    colors: string[];
+    symbolSize: number;
+    emphasis: {
+      scale: boolean;
+      scaleSize: number;
+    };
+    sizeRange: {
+      min: number;
+      max: number;
+    };
+    enableDynamicSize: boolean;
+  };
 }
 
 /**
@@ -260,6 +306,7 @@ export interface Config {
     histogram: HistogramData;
     pie: PieDataItem[];
     map: MapDataItem[];
+    scatter: ScatterChartData;
   };
   env: EnvironmentConfig;
   api: APIConfig;
