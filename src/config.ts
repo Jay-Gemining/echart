@@ -15,6 +15,7 @@ import type {
   PieDataItem,
   MapDataItem,
   ScatterChartData,
+  MapType,
 } from "./types/index.ts";
 
 /**
@@ -35,6 +36,7 @@ export const config: Config = {
   // 数据文件路径
   data: {
     chinaMapPath: "data/china.json",
+    worldMapPath: "data/world.json",
   },
 
   // 图表默认配置
@@ -406,6 +408,9 @@ export function validateConfig(): ValidationResult {
   // 检查数据文件路径
   if (!config.data.chinaMapPath) {
     errors.push("China map data path is required");
+  }
+  if (!config.data.worldMapPath) {
+    errors.push("World map data path is required");
   }
 
   // 检查省份映射

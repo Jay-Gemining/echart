@@ -12,6 +12,7 @@ console.log("🚀 ECharts 服务器启动检查...\n");
 const requiredFiles = [
   { file: "src/server.js", description: "主服务器文件" },
   { file: "data/china.json", description: "中国地图GeoJSON数据" },
+  { file: "data/world.json", description: "世界地图GeoJSON数据" },
   { file: "package.json", description: "项目配置文件" },
 ];
 
@@ -62,6 +63,19 @@ if (!allFilesExist) {
     console.log("3. 或者运行以下命令：");
     console.log(
       "   curl -o data/china.json https://raw.githubusercontent.com/yezongyang/china-geojson/master/china.json",
+    );
+  }
+
+  if (!existsSync("data/world.json")) {
+    console.log("\n💡 获取世界地图数据的方法：");
+    console.log("1. 从以下地址下载世界地图GeoJSON数据：");
+    console.log(
+      "   https://github.com/tower1229/echarts-world-map-jeojson/blob/master/worldZH.json",
+    );
+    console.log("2. 将下载的文件保存为 data/world.json");
+    console.log("3. 或者运行以下命令：");
+    console.log(
+      "   curl -o data/world.json https://github.com/tower1229/echarts-world-map-jeojson/blob/master/worldZH.json",
     );
   }
 

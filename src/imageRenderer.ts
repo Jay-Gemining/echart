@@ -16,6 +16,7 @@ import type {
   ExtendedEChartsOption,
   PerformanceMetrics,
   RenderStats,
+  MapType,
 } from "./types/index.ts";
 
 /**
@@ -42,7 +43,7 @@ interface CacheItem {
  * 提供高性能、类型安全的图表到PNG转换功能
  */
 export class CanvasRenderer implements ICanvasRenderer {
-  private chinaMapData: any = null;
+  private loadedMaps: Set<MapType> = new Set();
   private isMapDataLoaded: boolean = false;
   private renderingQueue: Map<string, RenderQueueItem> = new Map();
   private cache: Map<string, CacheItem> = new Map();
@@ -231,8 +232,9 @@ export class CanvasRenderer implements ICanvasRenderer {
     this.setupRenderingEnvironment(canvas, options);
 
     // 检查并加载地图数据
-    if (this.isMapChart(chartConfig)) {
-      await this.ensureMapDataLoaded();
+    const mapType = this.getMapTypeFromConfig(chartConfig);
+    if (mapType) {
+      await this.ensureMapDataLoaded(mapType);
     }
 
     // 初始化ECharts实例
@@ -437,32 +439,62 @@ export class CanvasRenderer implements ICanvasRenderer {
 
   /**
    * 确保地图数据已加载
+   * @param mapType 要加载的地图类型 ('china' 或 'world')
    */
-  private async ensureMapDataLoaded(): Promise<void> {
-    if (this.isMapDataLoaded) {
-      return;
+  private async ensureMapDataLoaded(mapType: MapType): Promise<void> {
+    if (this.loadedMaps.has(mapType)) {
+      return; // 已加载，直接返回
     }
 
     try {
-      const mapDataPath = config.data.chinaMapPath;
+      let mapDataPath: string | undefined;
+      let registerName: string;
+
+      if (mapType === "china") {
+        mapDataPath = config.data.chinaMapPath;
+        registerName = "china";
+      } else if (mapType === "world") {
+        mapDataPath = config.data.worldMapPath;
+        registerName = "world";
+      } else {
+        throw new Error(`不支持的地图类型: ${mapType}`);
+      }
+
+      if (!mapDataPath) {
+        throw new Error(`未配置 ${mapType} 地图数据路径`);
+      }
 
       if (!existsSync(mapDataPath)) {
         throw new Error(`地图数据文件不存在: ${mapDataPath}`);
       }
 
       const mapData = JSON.parse(readFileSync(mapDataPath, "utf8"));
-      echarts.registerMap("china", mapData);
+      echarts.registerMap(registerName, mapData);
 
-      this.chinaMapData = mapData;
-      this.isMapDataLoaded = true;
+      this.loadedMaps.add(mapType); // 标记为已加载
 
-      console.log("✅ 地图数据加载成功");
+      console.log(`✅ ${mapType} 地图数据加载成功`);
     } catch (error) {
-      console.error("❌ 地图数据加载失败:", error);
+      console.error(`❌ ${mapType} 地图数据加载失败:`, error);
       throw new Error(
         `地图数据加载失败: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
+  }
+
+  /**
+   * 从图表配置中提取地图类型
+   */
+  private getMapTypeFromConfig(chartConfig: EChartsOption): MapType | null {
+    if (
+      chartConfig.series &&
+      Array.isArray(chartConfig.series) &&
+      chartConfig.series.length > 0 &&
+      (chartConfig.series[0] as any).type === "map"
+    ) {
+      return (chartConfig.series[0] as any).map || "china"; // 默认为 'china'
+    }
+    return null;
   }
 
   /**

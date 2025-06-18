@@ -18,6 +18,7 @@ import type {
   BaseResponse,
   HttpMethod,
   CorsConfig,
+  MapType,
 } from "./types/index.ts";
 import { readFileSync, existsSync } from "fs";
 import type { EChartsOption } from "echarts";
@@ -149,7 +150,7 @@ class OptimizedEChartsServer {
     const routes: Record<string, RouteHandler> = {
       "/": this.handleHomePage.bind(this),
       "/health": this.handleHealthCheck.bind(this),
-      "/china.json": this.handleChinaMapData.bind(this),
+      "/geo/:mapName.json": this.handleGeoJsonData.bind(this),
       "/line": this.handleLineChart.bind(this),
       "/histogram": this.handleHistogramChart.bind(this),
       "/pie": this.handlePieChart.bind(this),
@@ -157,6 +158,13 @@ class OptimizedEChartsServer {
       "/scatter": this.handleScatterChart.bind(this),
       "/png": this.handlePNGGeneration.bind(this),
     };
+
+    // 匹配动态路由，例如 /geo/china.json
+    const geoMatch = path.match(/^\/geo\/(.+)\.json$/);
+    if (geoMatch) {
+      // 传递匹配到的地图名称给处理器
+      return await this.handleGeoJsonData(req, corsHeaders, geoMatch[1]);
+    }
 
     const handler = routes[path];
     if (handler) {
@@ -263,17 +271,34 @@ class OptimizedEChartsServer {
   }
 
   /**
-   * 处理中国地图数据请求
+   * 处理地理数据 (GeoJSON) 请求
+   * @param mapName 从URL路径中提取的地图名称 (如 'china', 'world')
    */
-  private async handleChinaMapData(
+  private async handleGeoJsonData(
     req: HTTPRequest,
     corsHeaders: Record<string, string>,
+    mapName: string,
   ): Promise<Response> {
     try {
-      const mapDataPath = this.config.data.chinaMapPath;
+      let mapDataPath: string | undefined;
+
+      switch (mapName) {
+        case "china":
+          mapDataPath = this.config.data.chinaMapPath;
+          break;
+        case "world":
+          mapDataPath = this.config.data.worldMapPath;
+          break;
+        default:
+          throw new Error(`不支持的地图名称: ${mapName}`);
+      }
+
+      if (!mapDataPath) {
+        throw new Error(`未配置地图数据路径: ${mapName}`);
+      }
 
       if (!existsSync(mapDataPath)) {
-        throw new Error("地图数据文件不存在");
+        throw new Error(`地图数据文件不存在: ${mapDataPath}`);
       }
 
       const mapData = readFileSync(mapDataPath, "utf8");
@@ -374,13 +399,15 @@ class OptimizedEChartsServer {
     corsHeaders: Record<string, string>,
   ): Promise<Response> {
     if (req.method === "GET") {
+      // 默认请求中国地图
       const chartConfig = this.getMapChartConfig();
       return this.createJSONResponse(chartConfig, corsHeaders);
     }
 
     if (req.method === "POST") {
       const data = (await req.json()) as Partial<MapChartData>;
-      const chartConfig = this.getMapChartConfig(data);
+      const mapType: MapType = data.mapType || "china";
+      const chartConfig = this.getMapChartConfig(data, mapType);
       return this.createJSONResponse(chartConfig, corsHeaders);
     }
 
@@ -495,7 +522,9 @@ class OptimizedEChartsServer {
       case "pie":
         return this.getPieChartConfig(chartData as PieChartData);
       case "map":
-        return this.getMapChartConfig(chartData as MapChartData);
+        const mapChartData = chartData as MapChartData;
+        const mapType: MapType = mapChartData.mapType || "china";
+        return this.getMapChartConfig(mapChartData, mapType);
       case "scatter":
         return this.getScatterChartConfig(chartData as ScatterChartData);
       default:
@@ -716,22 +745,32 @@ class OptimizedEChartsServer {
   /**
    * 生成地图配置
    */
-  private getMapChartConfig(data?: Partial<MapChartData>): EChartsOption {
+  private getMapChartConfig(
+    data?: Partial<MapChartData>,
+    mapType: MapType = "china",
+  ): EChartsOption {
     const defaultData = this.config.defaultData.map;
     const chartConfig = this.config.charts.map;
 
     const title = data?.title || chartConfig.defaultTitle;
     let mapData = data?.data || defaultData;
 
-    // 地名标准化处理
-    mapData = mapData.map((item) => ({
-      ...item,
-      name: this.normalizeProvinceName(item.name),
-    }));
+    // 如果是世界地图，可能不需要省份标准化，或者需要不同的映射
+    if (mapType === "china") {
+      // 地名标准化处理 (仅对中国地图数据进行)
+      mapData = mapData.map((item) => ({
+        ...item,
+        name: this.normalizeProvinceName(item.name),
+      }));
+    } else if (mapType === "world" && data?.data) {
+      // 对于世界地图，默认数据可能不适用，且需要处理国家名称
+      // 这里可以添加世界国家名称的标准化逻辑，或直接使用传入的数据
+      // 暂时不进行标准化，假定传入的世界地图数据名称是标准的
+    }
 
     const values = mapData.map((item) => item.value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    const minValue = values.length > 0 ? Math.min(...values) : 0;
+    const maxValue = values.length > 0 ? Math.max(...values) : 100; // 避免空数组
 
     return {
       title: {
@@ -755,7 +794,7 @@ class OptimizedEChartsServer {
         {
           name: "销售数据",
           type: "map",
-          map: "china",
+          map: mapType,
           roam: false,
           data: mapData,
           emphasis: {
@@ -1099,8 +1138,12 @@ class OptimizedEChartsServer {
             </div>
 
             <div class="chart-card">
-                <h3 class="chart-title">🗺️ 地图</h3>
-                <div id="mapChart" class="chart-container"></div>
+                <h3 class="chart-title">🗺️ 地图 (中国)</h3>
+                <div id="chinaMapChart" class="chart-container"></div>
+            </div>
+            <div class="chart-card">
+                <h3 class="chart-title">🗺️ 地图 (世界)</h3>
+                <div id="worldMapChart" class="chart-container"></div>
             </div>
             <div class="chart-card">
                 <h3 class="chart-title">🔹 散点图</h3>
@@ -1111,6 +1154,7 @@ class OptimizedEChartsServer {
         <div class="api-section">
             <h2 class="api-title">📡 API端点</h2>
             <div class="api-endpoint">GET  /health - 健康检查和性能状态</div>
+            <div class="api-endpoint">GET  /geo/:mapName.json - 获取地理数据 (例如 /geo/china.json, /geo/world.json)</div>
             <div class="api-endpoint">GET  /line - 获取折线图配置</div>
             <div class="api-endpoint">GET  /scatter - 获取散点图配置</div>
             <div class="api-endpoint">POST /scatter - 自定义散点图数据</div>
@@ -1120,7 +1164,7 @@ class OptimizedEChartsServer {
             <div class="api-endpoint">GET  /pie - 获取饼图配置</div>
             <div class="api-endpoint">POST /pie - 自定义饼图数据</div>
             <div class="api-endpoint">GET  /map - 获取地图配置</div>
-            <div class="api-endpoint">POST /map - 自定义地图数据</div>
+            <div class="api-endpoint">POST /map - 自定义地图数据 (可指定 mapType: "china" | "world")</div>
             <div class="api-endpoint">POST /png - 生成高质量PNG图像（纯Canvas渲染）</div>
         </div>
     </div>
@@ -1151,17 +1195,49 @@ class OptimizedEChartsServer {
                 const pieChart = echarts.init(document.getElementById('pieChart'));
                 pieChart.setOption(pieData);
 
-                // 地图
-                const mapResponse = await fetch('/map');
-                const mapData = await mapResponse.json();
+                // 中国地图
+                const chinaMapResponse = await fetch('/map', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mapType: 'china' })
+                });
+                const chinaMapData = await chinaMapResponse.json();
 
                 // 加载中国地图数据
-                const chinaResponse = await fetch('/china.json');
-                const chinaGeoData = await chinaResponse.json();
+                const chinaGeoResponse = await fetch('/geo/china.json');
+                const chinaGeoData = await chinaGeoResponse.json();
                 echarts.registerMap('china', chinaGeoData);
 
-                const mapChart = echarts.init(document.getElementById('mapChart'));
-                mapChart.setOption(mapData);
+                const chinaMapChart = echarts.init(document.getElementById('chinaMapChart'));
+                chinaMapChart.setOption(chinaMapData);
+
+
+                // 世界地图
+                const worldMapResponse = await fetch('/map', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // 提供一些默认的世界地图数据，或者让后端提供一个默认的空数据配置
+                    body: JSON.stringify({
+                        mapType: 'world',
+                        title: '全球销售数据分布',
+                        data: [
+                            { name: 'United States', value: 500 },
+                            { name: 'China', value: 800 },
+                            { name: 'India', value: 300 },
+                            { name: 'Germany', value: 250 },
+                            { name: 'France', value: 200 }
+                        ]
+                    })
+                });
+                const worldMapData = await worldMapResponse.json();
+
+                // 加载世界地图数据
+                const worldGeoResponse = await fetch('/geo/world.json');
+                const worldGeoData = await worldGeoResponse.json();
+                echarts.registerMap('world', worldGeoData);
+
+                const worldMapChart = echarts.init(document.getElementById('worldMapChart'));
+                worldMapChart.setOption(worldMapData);
 
                 // 散点图
                 const scatterResponse = await fetch('/scatter');
@@ -1174,7 +1250,8 @@ class OptimizedEChartsServer {
                     lineChart.resize();
                     histogramChart.resize();
                     pieChart.resize();
-                    mapChart.resize();
+                    chinaMapChart.resize(); // Resize both maps
+                    worldMapChart.resize();
                     scatterChart.resize();
                 });
 
@@ -1231,6 +1308,7 @@ async function main() {
   console.log("   1. 确保已安装所有依赖: bun install");
   console.log("   2. 检查TypeScript编译: bun run type-check");
   console.log("   3. 地图功能需要 data/china.json 文件");
+  console.log("   3. 地图功能需要 data/world.json 文件");
   console.log("   4. 完整的类型安全和智能提示支持\n");
 
   try {

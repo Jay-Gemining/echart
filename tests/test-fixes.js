@@ -79,6 +79,17 @@ async function testMapDataLoading() {
     console.log("数据类型:", mapData.type);
     console.log("特征数量:", mapData.features ? mapData.features.length : 0);
 
+    // 测试世界地图数据端点
+    const worldMapDataResponse = await fetch(`${BASE_URL}/world.json`);
+    const worldMapData = await worldMapDataResponse.json();
+
+    console.log("✅ 世界地图数据加载成功");
+    console.log("数据类型:", worldMapData.type);
+    console.log(
+      "特征数量:",
+      worldMapData.features ? worldMapData.features.length : 0,
+    );
+
     // 测试地图配置
     const mapConfigResponse = await fetch(`${BASE_URL}/map`);
     const mapConfig = await mapConfigResponse.json();

@@ -6,6 +6,11 @@ import type { EChartsOption, ECharts } from "echarts";
 // ===== 基础类型定义 =====
 
 /**
+ * 地图类型
+ */
+export type MapType = "china" | "world";
+
+/**
  * 图表类型枚举
  */
 export type ChartType =
@@ -92,6 +97,7 @@ export interface MapDataItem {
 export interface MapChartData {
   title?: string;
   data: MapDataItem[];
+  mapType?: MapType;
 }
 
 /**
@@ -178,6 +184,7 @@ export interface ServerConfig {
  */
 export interface DataConfig {
   chinaMapPath: string;
+  worldMapPath: string;
 }
 
 /**
