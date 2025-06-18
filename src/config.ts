@@ -43,7 +43,7 @@ export const config: Config = {
   charts: {
     // 折线图配置
     line: {
-      defaultTitle: "月度销售趋势",
+      defaultTitle: "",
       grid: {
         left: "3%",
         right: "4%",
@@ -69,7 +69,7 @@ export const config: Config = {
 
     // 直方图配置
     histogram: {
-      defaultTitle: "年龄分布直方图",
+      defaultTitle: "",
       colors: {
         start: "#83bff6",
         middle: "#188df0",
@@ -84,7 +84,7 @@ export const config: Config = {
 
     // 饼图配置
     pie: {
-      defaultTitle: "市场份额分布",
+      defaultTitle: "",
       radius: ["40%", "70%"],
       center: ["60%", "50%"],
       colors: [
@@ -102,7 +102,7 @@ export const config: Config = {
 
     // 地图配置
     map: {
-      defaultTitle: "全国销售数据分布",
+      defaultTitle: "",
       tooltipFormatter: "{b}<br/>{c} 万元",
       visualMap: {
         left: "left",
@@ -115,7 +115,7 @@ export const config: Config = {
 
     // 散点图配置
     scatter: {
-      defaultTitle: "数据分布散点图",
+      defaultTitle: "",
       grid: {
         left: "3%",
         right: "4%",
@@ -294,8 +294,8 @@ export const config: Config = {
 
     // 散点图默认数据
     scatter: {
-      xAxisName: "X轴",
-      yAxisName: "Y轴",
+      xAxisName: "",
+      yAxisName: "",
       series: [
         {
           name: "系列1",
