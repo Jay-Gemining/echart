@@ -98,17 +98,9 @@ export interface MapChartData {
  * 散点图数据项
  */
 export interface ScatterDataItem {
-  name?: string;
-  value: [number, number] | [number, number, number];
-}
-
-/**
- * 散点图系列数据
- */
-export interface ScatterSeriesData {
   name: string;
-  data: ScatterDataItem[];
-  symbolSize?: number | ((value: any) => number);
+  data: [number, number][];
+  symbolSize: number;
 }
 
 /**
@@ -118,7 +110,7 @@ export interface ScatterChartData {
   title?: string;
   xAxisName?: string;
   yAxisName?: string;
-  series: ScatterSeriesData[];
+  series: ScatterDataItem[];
 }
 
 /**

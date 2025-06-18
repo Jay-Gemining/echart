@@ -838,53 +838,11 @@ class OptimizedEChartsServer {
         },
       },
       series: seriesData.map((series, index) => {
-        // 检查是否有三维数据（包含大小信息）
-        const hasThreeDimensionalData = series.data.some(
-          (item) => Array.isArray(item.value) && item.value.length === 3,
-        );
-
-        // 如果有三维数据，使用函数来动态计算大小
-        let symbolSize: number | ((value: any) => number);
-
-        if (hasThreeDimensionalData) {
-          // 计算大小范围用于缩放
-          const sizes = series.data
-            .filter(
-              (item) => Array.isArray(item.value) && item.value.length === 3,
-            )
-            .map((item) => item.value[2])
-            .filter((size): size is number => typeof size === "number");
-
-          const minSize = Math.min(...sizes);
-          const maxSize = Math.max(...sizes);
-          const sizeRange = maxSize - minSize;
-
-          // 使用配置中定义的大小范围
-          const minDisplaySize = chartConfig.sizeRange.min;
-          const maxDisplaySize = chartConfig.sizeRange.max;
-
-          symbolSize = (value: any) => {
-            if (Array.isArray(value) && value.length === 3) {
-              const size = value[2];
-              if (sizeRange === 0) return chartConfig.symbolSize;
-              // 线性缩放到显示范围
-              const normalizedSize = (size - minSize) / sizeRange;
-              return (
-                minDisplaySize +
-                normalizedSize * (maxDisplaySize - minDisplaySize)
-              );
-            }
-            return chartConfig.symbolSize;
-          };
-        } else {
-          // 使用系列级别的大小或默认大小
-          symbolSize = series.symbolSize || chartConfig.symbolSize;
-        }
-
+        const symbolSize = series.symbolSize || chartConfig.symbolSize;
         return {
           name: series.name,
           type: "scatter",
-          data: series.data.map((item) => item.value),
+          data: series.data,
           symbolSize: symbolSize,
           itemStyle: {
             color: chartConfig.colors[index % chartConfig.colors.length],
