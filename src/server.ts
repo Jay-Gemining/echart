@@ -818,6 +818,14 @@ class OptimizedEChartsServer {
       // 暂时不进行标准化，假定传入的世界地图数据名称是标准的
     }
 
+    // 为每一个有数据项的地区，单独设置 label.show = true 来覆盖默认值
+    const seriesData = mapData.map((item) => ({
+      ...item,
+      label: {
+        show: true, // 只为这个数据项显示标签
+      },
+    }));
+
     const values = mapData.map((item) => item.value);
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 100; // 避免空数组
@@ -845,11 +853,20 @@ class OptimizedEChartsServer {
           name: "销售数据",
           type: "map",
           map: mapType,
-          roam: false,
-          data: mapData,
+          roam: true,
+          data: seriesData,
+          // 默认不显示所有标签
+          label: {
+            show: false, // 默认不显示
+            formatter: "{b}\n{c}",
+            color: "#333",
+            fontSize: 10,
+          },
           emphasis: {
             label: {
-              show: true,
+              show: true, // 鼠标悬浮时依然显示标签
+              color: "#000",
+              fontSize: 12,
             },
             itemStyle: {
               areaColor: "#ffeaa7",
@@ -1283,13 +1300,13 @@ class OptimizedEChartsServer {
                     // 提供一些默认的世界地图数据，或者让后端提供一个默认的空数据配置
                     body: JSON.stringify({
                         mapType: 'world',
-                        title: '全球销售数据分布',
+                        title: '',
                         data: [
-                            { name: 'United States', value: 500 },
-                            { name: 'China', value: 800 },
-                            { name: 'India', value: 300 },
-                            { name: 'Germany', value: 250 },
-                            { name: 'France', value: 200 }
+                            { name: '美国', value: 500 },
+                            { name: '中国', value: 800 },
+                            { name: '印度', value: 300 },
+                            { name: '德国', value: 250 },
+                            { name: '法国', value: 200 }
                         ]
                     })
                 });
