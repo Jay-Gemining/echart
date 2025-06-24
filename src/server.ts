@@ -886,7 +886,6 @@ class OptimizedEChartsServer {
     const defaultData = this.config.defaultData.scatter;
     const chartConfig = this.config.charts.scatter;
 
-    // 从传入数据或默认数据中获取配置
     const {
       title = chartConfig.defaultTitle,
       xCategories = defaultData.xCategories,
@@ -894,10 +893,24 @@ class OptimizedEChartsServer {
       series: seriesData = defaultData.series,
     } = data || {};
 
-    // 计算所有数据点中 size 的最大值和最小值，用于 visualMap
+    // 在x轴和y轴的分类数据前后各加一个空字符串，形成“留白”区域
+    const paddedXCategories = ["", ...xCategories, ""];
+    const paddedYCategories = ["", ...yCategories, ""];
+
     const allSizes = seriesData.flatMap((s) => s.data.map((p) => p.size));
     const minSize = allSizes.length > 0 ? Math.min(...allSizes) : 0;
     const maxSize = allSizes.length > 0 ? Math.max(...allSizes) : 100;
+
+    const wrapLabel = (name: string, maxLength: number = 8): string => {
+      if (!name || name.length <= maxLength) {
+        return name;
+      }
+      let result = "";
+      for (let i = 0; i < name.length; i += maxLength) {
+        result += name.substring(i, i + maxLength) + "\n";
+      }
+      return result.trim();
+    };
 
     return {
       title: {
@@ -909,48 +922,61 @@ class OptimizedEChartsServer {
         },
       },
       legend: {
-        data: seriesData.map((s) => s.name),
-        top: chartConfig.legend.defaultTop,
+        show: false,
       },
-      grid: chartConfig.grid,
+      // 调整Grid以获得更紧凑的布局
+      grid: {
+        left: "5%", // 减小左边距
+        right: "5%", // 稍微留出右边距
+        bottom: "10%", // 为倾斜的X轴标签保留空间
+        top: "10%", // 顶部边距
+        containLabel: true,
+      },
       tooltip: {
         trigger: "item",
         formatter: (params: any) => {
-          // params.value 是 [x_index, y_index, size]
-          const xIndex = params.value[0];
-          const yIndex = params.value[1];
+          // 因为坐标轴加了padding，索引需要减1来获取正确的标签
+          const xIndex = params.value[0] - 1;
+          const yIndex = params.value[1] - 1;
           const size = params.value[2];
           const xLabel = xCategories[xIndex] || "未知X";
           const yLabel = yCategories[yIndex] || "未知Y";
-          return `${params.seriesName}<br/>
-                     ${xLabel} / ${yLabel}<br/>
-                     大小: ${size.toFixed(2)}`;
+          return `${params.seriesName || yLabel}<br/>
+                        ${xLabel}: ${size.toFixed(2)}`;
         },
       },
-      // X轴配置为分类轴
       xAxis: {
         type: "category",
-        data: xCategories,
-        boundaryGap: true,
+        data: paddedXCategories, // 使用添加了“留白”的X轴数据
+        boundaryGap: false,
         splitLine: { show: true },
         axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          rotate: 45,
+          interval: 0,
+          formatter: (value: string) => wrapLabel(value, 10),
+        },
       },
-      // Y轴配置为分类轴
       yAxis: {
         type: "category",
-        data: yCategories,
-        boundaryGap: true,
+        data: paddedYCategories, // 使用添加了“留白”的Y轴数据
+        boundaryGap: false,
         splitLine: { show: true },
         axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          rotate: 45,
+          interval: 0,
+          formatter: (value: string) => wrapLabel(value, 12),
+        },
       },
-      // 使用 visualMap 控制散点大小
       visualMap: {
-        show: false, // 不显示 visualMap 组件，但其功能仍然生效
+        show: false,
         min: minSize,
         max: maxSize,
-        dimension: 2, // 指定 `size` 是数据项的第三个维度 ([x_idx, y_idx, size])
+        dimension: 2,
         inRange: {
-          // 将 size 值映射到视觉上的符号大小
           symbolSize: [chartConfig.sizeRange.min, chartConfig.sizeRange.max],
         },
       },
@@ -958,14 +984,16 @@ class OptimizedEChartsServer {
         return {
           name: series.name,
           type: "scatter",
-          // 转换数据格式为 ECharts 需要的 [x_index, y_index, size]
+          // 所有数据点的坐标都+1，以适应带“留白”的新坐标系
           data: series.data.map((point) => [
-            point.position[0],
-            point.position[1],
+            point.position[0] + 1,
+            point.position[1] + 1,
             point.size,
           ]),
           itemStyle: {
             color: chartConfig.colors[index % chartConfig.colors.length],
+            borderColor: "rgba(0, 0, 0, 0.2)",
+            borderWidth: 1,
           },
           emphasis: {
             focus: "series",

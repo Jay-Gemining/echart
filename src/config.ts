@@ -142,8 +142,8 @@ export const config: Config = {
         scaleSize: 30,
       },
       sizeRange: {
-        min: 5,
-        max: 50,
+        min: 20,
+        max: 40,
       },
       enableDynamicSize: true,
     },
