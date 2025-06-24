@@ -85,8 +85,8 @@ export const config: Config = {
     // 饼图配置
     pie: {
       defaultTitle: "",
-      radius: ["40%", "70%"],
-      center: ["60%", "50%"],
+      radius: ["35%", "60%"],
+      center: ["50%", "50%"],
       colors: [
         "#5470c6",
         "#91cc75",
@@ -246,12 +246,12 @@ export const config: Config = {
 
     // 饼图默认数据
     pie: [
-      { name: "苹果", value: 335 },
-      { name: "三星", value: 310 },
-      { name: "华为", value: 234 },
-      { name: "小米", value: 135 },
-      { name: "OPPO", value: 148 },
-      { name: "其他", value: 98 },
+      { name: "无人机操控对材结构技术", value: 335 },
+      { name: "无人机结构技术", value: 310 },
+      { name: "一无人机配套", value: 234 },
+      { name: "无人机操控技术", value: 135 },
+      { name: "智能吊载工具", value: 148 },
+      { name: "无人机消防安全技术", value: 98 },
     ],
 
     // 地图默认数据

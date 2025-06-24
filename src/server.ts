@@ -700,6 +700,22 @@ class OptimizedEChartsServer {
     const title = data?.title || chartConfig.defaultTitle;
     const pieData = data?.data || defaultData;
 
+    const maxLabelLength = 6; // 设置每行最多显示的字符数
+    const processedPieData = pieData.map((item) => {
+      let newName = item.name;
+      // 如果名称长度超过最大长度，则进行处理
+      if (newName.length > maxLabelLength) {
+        let wrappedName = "";
+        // 按步长切割字符串并添加换行符
+        for (let i = 0; i < newName.length; i += maxLabelLength) {
+          wrappedName += newName.substring(i, i + maxLabelLength) + "\n";
+        }
+        // 去除末尾可能多余的换行符
+        newName = wrappedName.trim();
+      }
+      return { ...item, name: newName };
+    });
+
     return {
       title: {
         text: title,
@@ -714,9 +730,14 @@ class OptimizedEChartsServer {
         formatter: "{a} <br/>{b}: {c} ({d}%)",
       },
       legend: {
-        orient: "vertical",
-        left: "left",
-        data: pieData.map((item) => item.name),
+        show: false,
+      },
+      grid: {
+        top: "5%",
+        bottom: "5%",
+        left: "15%",
+        right: "15%",
+        containLabel: true,
       },
       color: chartConfig.colors,
       series: [
@@ -725,7 +746,7 @@ class OptimizedEChartsServer {
           type: "pie",
           radius: chartConfig.radius,
           center: chartConfig.center,
-          data: pieData,
+          data: processedPieData,
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
@@ -735,7 +756,17 @@ class OptimizedEChartsServer {
           },
           label: {
             show: true,
-            formatter: "{b}: {d}%",
+            formatter: "{b}\n{d}%",
+            alignTo: "edge",
+            minMargin: 10,
+            edgeDistance: 10,
+            lineHeight: 18, // 保证多行文本有足够的行高
+          },
+          labelLine: {
+            show: true,
+            length: 15,
+            length2: 25,
+            smooth: true,
           },
         },
       ],
