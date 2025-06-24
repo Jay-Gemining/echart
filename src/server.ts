@@ -623,6 +623,18 @@ class OptimizedEChartsServer {
     const categories = data?.categories || defaultData.categories;
     const histogramData = data?.data || defaultData.data;
 
+    const maxLabelLength = 8; // 每行最多显示8个字符，可根据需要调整
+    const processedCategories = categories.map((name) => {
+      if (name.length > maxLabelLength) {
+        let wrappedName = "";
+        for (let i = 0; i < name.length; i += maxLabelLength) {
+          wrappedName += name.substring(i, i + maxLabelLength) + "\n";
+        }
+        return wrappedName.trim();
+      }
+      return name;
+    });
+
     return {
       title: {
         text: title,
@@ -638,9 +650,16 @@ class OptimizedEChartsServer {
           type: "shadow",
         },
       },
+      // grid 配置，为底部标签留出足够空间
+      grid: {
+        left: "5%",
+        right: "5%",
+        bottom: "5%", // 增加底部边距，容纳旋转和换行的标签
+        containLabel: true, // 关键：自动调整，防止标签被截断
+      },
       xAxis: {
         type: "category",
-        data: categories,
+        data: processedCategories,
         axisLabel: {
           interval: 0,
           rotate: 45,
