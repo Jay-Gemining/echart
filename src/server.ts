@@ -1002,6 +1002,16 @@ class OptimizedEChartsServer {
               borderWidth: 2,
             },
           },
+          // Add this label configuration
+          label: {
+            show: true,
+            position: 'inside',
+            // 使用ECharts模板格式化，直接引用数据的第3个维度（索引为2）
+            formatter: '{@[2]}', 
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 'bold'
+          },
         };
       }),
     };
